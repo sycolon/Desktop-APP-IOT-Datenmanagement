@@ -2,7 +2,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
 
-public class CONTROLLER_NAME {
+public class AddRoomController {
 
     @FXML
     private Button btnAdd;
