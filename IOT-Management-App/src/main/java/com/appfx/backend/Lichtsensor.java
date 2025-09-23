@@ -24,7 +24,7 @@ public class Lichtsensor extends Sensor{
     @Override
     public String toString() {
         return "Lichtsensor{" +
-                "topic=" + getTopic() +      // falls Sensor getter hat
+                "topic=" + getTopic() +
                 ", timestamp=" + getTimestamp() +
                 ", name=" + getName() +
                 ", active=" + isActive() +
