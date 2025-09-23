@@ -1,0 +1,25 @@
+CREATE DATABASE IF NOT EXISTS homedb;
+USE homedb;
+
+-- Tabelle für Räume
+CREATE TABLE IF NOT EXISTS Room (
+    RoomID INTEGER PRIMARY KEY AUTOINCREMENT,
+    RoomName TEXT NOT NULL
+);
+
+-- Tabelle für Sensortypen
+CREATE TABLE IF NOT EXISTS Type (
+    TypeID INTEGER PRIMARY KEY AUTOINCREMENT,
+    TypeName TEXT NOT NULL
+);
+
+-- Tabelle für Sensoren/Messungen
+CREATE TABLE IF NOT EXISTS Sensor (
+    SensorID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Value REAL,
+    Zeit DATETIME,
+    RoomID INTEGER,
+    TypeID INTEGER,
+    FOREIGN KEY (RoomID) REFERENCES Room(RoomID),
+    FOREIGN KEY (TypeID) REFERENCES Type(TypeID)
+);
