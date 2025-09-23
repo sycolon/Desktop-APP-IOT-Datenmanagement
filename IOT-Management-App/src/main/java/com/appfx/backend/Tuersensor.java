@@ -1,23 +1,23 @@
 package com.appfx.backend;
 
-public class Lichtsensor extends Sensor{
+public class Tuersensor extends Sensor{
 
-    // Attribute
-    private boolean active;
+    // Attribut
+    private boolean doorOpen;
 
     // Konstruktor
-    public Lichtsensor(String topic, String timestamp, String name, boolean active) {
+    public Tuersensor(String topic, String timestamp, String name, boolean doorOpen) {
         super(topic, timestamp, name);
-        this.active = active;
+        this.doorOpen = doorOpen;
     }
 
     // getter/setter Methoden
-    public boolean isActive() {
-        return active;
+    public boolean isDoorOpen() {
+        return doorOpen;
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
+    public void setDoorOpen(boolean doorOpen) {
+        this.doorOpen = doorOpen;
     }
 
     // Weitere Methoden
@@ -27,8 +27,7 @@ public class Lichtsensor extends Sensor{
                 "topic=" + getTopic() +
                 ", timestamp=" + getTimestamp() +
                 ", name=" + getName() +
-                ", active=" + isActive() +
+                ", doorOpen=" + isDoorOpen() +
                 "}";
     } // toString()
-
-} // Class Lichtsensor
+}
