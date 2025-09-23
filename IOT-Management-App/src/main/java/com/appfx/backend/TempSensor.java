@@ -7,8 +7,8 @@ public class TempSensor extends Sensor {
 
 
     // Konstruktor
-    public TempSensor(String topic, String timestamp, double temperatur) {
-        super(topic, timestamp);
+    public TempSensor(String topic, String timestamp,String name, double temperatur) {
+        super(topic, timestamp,name);
         this.temperatur = temperatur;
     }
     // getter und setter Methoden
@@ -25,6 +25,7 @@ public class TempSensor extends Sensor {
         return "TempSensor{" +
                 "topic=" + getTopic() +      // falls Sensor getter hat
                 ", timestamp=" + getTimestamp() +
+                ", timestamp=" + getName() +
                 ", temperatur=" + temperatur +
                 '}';
     }
