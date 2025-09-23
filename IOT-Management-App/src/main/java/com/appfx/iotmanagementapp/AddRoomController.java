@@ -1,5 +1,6 @@
 package com.appfx.iotmanagementapp;
 
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
@@ -11,5 +12,10 @@ public class AddRoomController {
 
     @FXML
     private VBox windowBuildRoom;
+
+    @FXML
+    void klickButton(ActionEvent event) {
+
+    }
 
 }
