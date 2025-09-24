@@ -58,7 +58,7 @@ public class MainViewController {
             log("! DB init/load failed: " + e.getMessage());
         }
 
-        if (tfHost.getText() == null || tfHost.getText().isBlank()) tfHost.setText("test.mosquitto.org");
+        if (tfHost.getText() == null || tfHost.getText().isBlank()) tfHost.setText("broker.hivemq.com");
         if (tfPort.getText() == null || tfPort.getText().isBlank()) tfPort.setText("1883");
 
         renderRooms();
