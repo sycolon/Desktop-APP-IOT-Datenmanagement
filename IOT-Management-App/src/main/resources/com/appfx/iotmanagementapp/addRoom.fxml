@@ -4,29 +4,24 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox xmlns="http://javafx.com/javafx/17.0.12"
+<VBox xmlns="http://javafx.com/javafx/21.0.6"
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.appfx.iotmanagementapp.AddRoomController"
-      spacing="8"
-      prefWidth="320" prefHeight="220">
-
-    <padding>
-        <Insets top="12" right="12" bottom="12" left="12"/>
-    </padding>
-
+      spacing="10">
+    <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
 
     <Label text="Roomname:"/>
-    <TextField fx:id="tfRoomName" promptText="z.B. Wohnzimmer"/>
-
-    <Separator/>
+    <TextField fx:id="tfRoomName" promptText="z. B. Wohnzimmer"/>
 
     <Label text="Sensoren:"/>
-    <CheckBox text="Temperature"/>
-    <CheckBox text="Light"/>
-    <CheckBox text="Smoke"/>
-    <CheckBox text="ContactSensor"/>
-    <CheckBox text="MoveSensor"/>
-    <CheckBox text="DoorSensor"/>
+    <VBox spacing="6">
+        <CheckBox fx:id="cbTemperature" text="Temperature"/>
+        <CheckBox fx:id="cbHumidity"     text="HumiditySensor"/>
+        <CheckBox fx:id="cbLight"       text="Light"/>
+        <CheckBox fx:id="cbSmoke"       text="Smoke"/>
+        <CheckBox fx:id="cbMove"        text="MoveSensor"/>
+        <CheckBox fx:id="cbDoor"        text="DoorSensor"/>
+    </VBox>
 
     <HBox spacing="8">
         <Button fx:id="btnAdd" text="Add" onAction="#handleAdd"/>
