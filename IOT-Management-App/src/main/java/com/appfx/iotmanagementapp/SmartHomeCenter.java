@@ -7,15 +7,15 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
-public class HelloApplication extends Application {
+public class SmartHomeCenter extends Application {
 
     public static void main(String[] args) {
         launch(args);
     }
     @Override
     public void start(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("mainView.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 550, 400);
+        FXMLLoader fxmlLoader = new FXMLLoader(SmartHomeCenter.class.getResource("mainView.fxml"));
+        Scene scene = new Scene(fxmlLoader.load(), 1200, 700);
         stage.setTitle("Smart-Home-Center");
         stage.setScene(scene);
         stage.setResizable(false);
