@@ -101,7 +101,7 @@
                         </goals>
                         <configuration>
                             <!-- modular main: module/class -->
-                            <mainClass>com.appfx.iotmanagementapp/com.appfx.iotmanagementapp.HelloApplication</mainClass>
+                            <mainClass>com.appfx.iotmanagementapp/com.appfx.iotmanagementapp.SmartHomeCenter</mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
