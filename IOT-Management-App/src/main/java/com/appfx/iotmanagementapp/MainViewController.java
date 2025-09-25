@@ -19,10 +19,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -38,6 +35,7 @@ public class MainViewController {
     @FXML private Button btnAddRoom;
     @FXML private TextField tfHost;
     @FXML private TextField tfPort;
+    @FXML private TextField tfTopic;
     @FXML private GridPane gridRooms;
     @FXML private TextArea taLog;   // unten: „MQTT Log“
 
@@ -103,8 +101,17 @@ public class MainViewController {
                 mqtt.setOnMessage((topic, payload) -> handleTelemetry(topic, payload));
 
                 // Abonniere deine Topics (nach Bedarf anpassen)
-                mqtt.subscribe("house/#", 0);         // Haus-Schema: house/<room>/<type>/<id>
-                mqtt.subscribe("demo/nedim/#", 0);    // optional: dein Demo-Topic
+                if(isValidMqttTopic(tfTopic.getText())) {
+                    mqtt.subscribe(tfTopic.getText(), 0);
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Topic error");
+                    alert.setHeaderText(null);
+                    alert.setContentText("Topic dont match the specifications");
+                    alert.showAndWait();
+                }
+                        // Haus-Schema: house/<room>/<type>/<id>
+//                mqtt.subscribe("demo/nedim/#", 0);    // optional: dein Demo-Topic
 
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
@@ -262,5 +269,43 @@ public class MainViewController {
     public void mqttDisconnect() {
         mqtt.disconnect();
         log("✖ Disconnected");
+    }
+
+    public static boolean isValidMqttTopic(String topic) {
+        if (topic == null || topic.isEmpty()) {
+            return false;
+        }
+
+        // darf nicht mit Leerzeichen starten oder enden
+        if (!topic.equals(topic.trim())) {
+            return false;
+        }
+
+        // darf keine leeren Levels enthalten ("//")
+        if (topic.contains("//")) {
+            return false;
+        }
+
+        // '#' darf nur einmal vorkommen und nur am Ende als eigenes Level
+        if (topic.contains("#")) {
+            if (topic.chars().filter(ch -> ch == '#').count() > 1) {
+                return false;
+            }
+            if (!(topic.equals("#") || topic.endsWith("/#"))) {
+                return false;
+            }
+        }
+
+        // '+' darf nur als eigenes Level vorkommen
+        if (topic.contains("+")) {
+            String[] parts = topic.split("/");
+            for (String part : parts) {
+                if (part.contains("+") && !part.equals("+")) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
