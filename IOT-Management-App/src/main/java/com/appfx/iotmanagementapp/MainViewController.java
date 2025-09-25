@@ -26,6 +26,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class MainViewController {
@@ -33,6 +34,7 @@ public class MainViewController {
     // --- FXML-Elemente ---
     @FXML private Button btnConnect;
     @FXML private Button btnAddRoom;
+    @FXML private Button btnDeleteRoom;
     @FXML private TextField tfHost;
     @FXML private TextField tfPort;
     @FXML private TextField tfTopic;
@@ -162,7 +164,8 @@ public class MainViewController {
             });
 
             Stage dialog = new Stage();
-            dialog.setTitle("Raum hinzufügen");
+            dialog.setResizable(false);
+            dialog.setTitle("Add room");
             dialog.initModality(Modality.WINDOW_MODAL);
             dialog.initOwner(btnAddRoom.getScene().getWindow());
             dialog.setScene(new Scene(root));
@@ -173,6 +176,70 @@ public class MainViewController {
             log("! Dialog konnte nicht geladen werden: " + e.getMessage());
         }
     }
+
+    // --- Raum löschen (Dialog) ---
+    @FXML
+    private void handleDeleteRoom(ActionEvent event) {
+        if (rooms.isEmpty()) {
+            log("! Keine Räume zum Löschen vorhanden");
+            return;
+        }
+
+        // Raum auswählen über ChoiceDialog
+        ChoiceDialog<RoomModel> dialog = new ChoiceDialog<>(rooms.get(0), rooms);
+        dialog.setTitle("Raum löschen");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Wähle einen Raum zum Löschen:");
+        dialog.initOwner(btnDeleteRoom.getScene().getWindow());
+
+        Optional<RoomModel> result = dialog.showAndWait();
+        if (result.isEmpty()) {
+            log("! Raum löschen abgebrochen");
+            return;
+        }
+
+        RoomModel selectedRoom = result.get();
+
+        // Bestätigung
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Raum löschen bestätigen");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Willst du den Raum '" + selectedRoom.getName() + "' wirklich löschen?");
+        confirm.initOwner(btnDeleteRoom.getScene().getWindow());
+
+        Optional<ButtonType> confirmResult = confirm.showAndWait();
+        if (confirmResult.isEmpty() || confirmResult.get() != ButtonType.OK) {
+            log("! Raum löschen abgebrochen");
+            return;
+        }
+
+        try {
+            // Raum aus DB löschen über ID
+            repo.deleteRoom(selectedRoom.getName());  // <-- RoomID muss in RoomModel verfügbar sein
+
+            // Aus der Liste entfernen
+            rooms.remove(selectedRoom);
+
+            // UI aktualisieren
+            renderRooms();
+
+            log("Deleted room '" + selectedRoom.getName() + "'");
+
+            // Optional: MQTT Unsubscribe
+            if (mqtt.isConnected()) {
+                String base = "house/" + selectedRoom.getName().toLowerCase().replace(' ', '-');
+                mqtt.unsubscribe(base + "/#");
+                log("UNSUB " + base + "/#");
+            }
+
+        } catch (Exception ex) {
+            log("! Delete failed: " + ex.getMessage());
+        }
+    }
+
+
+
+
 
     // --- Rendering ---
     /** Zeichnet die Räume in ein 2-Spalten-Grid. */

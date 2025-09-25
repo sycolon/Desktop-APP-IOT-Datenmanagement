@@ -101,6 +101,38 @@ public class RoomRepository {
         }
     }
 
+    /** Löscht einen Raum inkl. zugehöriger Sensoren über den Namen. */
+    public void deleteRoom(String roomName) {
+        String deleteSensors = """
+        DELETE FROM Sensor
+        WHERE RoomID IN (SELECT RoomID FROM Room WHERE RoomName = ?)
+    """;
+        String deleteRoom = "DELETE FROM Room WHERE RoomName = ?";
+
+        try (Connection c = Database.getConnection()) {
+            c.setAutoCommit(false); // Transaktion starten
+
+            // Sensoren löschen
+            try (PreparedStatement psSensor = c.prepareStatement(deleteSensors)) {
+                psSensor.setString(1, roomName);
+                psSensor.executeUpdate();
+            }
+
+            // Raum löschen
+            try (PreparedStatement psRoom = c.prepareStatement(deleteRoom)) {
+                psRoom.setString(1, roomName);
+                int affected = psRoom.executeUpdate();
+                if (affected == 0) throw new SQLException("Raum '" + roomName + "' existiert nicht");
+            }
+
+            c.commit(); // Transaktion abschließen
+        } catch (SQLException e) {
+            throw new RuntimeException("Fehler beim Löschen des Raums", e);
+        }
+    }
+
+
+
     private SensorType fromLabel(String label) {
         for (SensorType t : SensorType.values()) {
             if (t.label().equalsIgnoreCase(label)) return t;

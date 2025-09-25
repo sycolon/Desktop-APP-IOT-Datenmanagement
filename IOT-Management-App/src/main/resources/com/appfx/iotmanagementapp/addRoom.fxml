@@ -4,10 +4,11 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox xmlns="http://javafx.com/javafx/21.0.6"
+<Pane prefHeight="300" prefWidth="250" xmlns="http://javafx.com/javafx/21.0.6"
       xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.appfx.iotmanagementapp.AddRoomController"
-      spacing="10">
+      fx:controller="com.appfx.iotmanagementapp.AddRoomController">
+
+<VBox spacing="10">
     <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
 
     <Label text="Roomname:"/>
@@ -28,3 +29,4 @@
         <Button text="Cancel" onAction="#handleCancel"/>
     </HBox>
 </VBox>
+</Pane>

@@ -15,4 +15,11 @@ public class RoomModel {
 
     public String getName(){ return name; }
     public EnumSet<SensorType> getSensors(){ return EnumSet.copyOf(sensors); }
+
+    @Override
+    public String toString() {
+        String sensorList = sensors.isEmpty() ? "keine Sensoren" :
+                sensors.stream().map(SensorType::label).sorted().reduce((a,b) -> a + ", " + b).orElse("");
+        return name + " (" + sensorList + ")";
+    }
 }
