@@ -24,6 +24,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -293,7 +294,69 @@ public class MainViewController {
         }
     }
 
+    @FXML
+    private void handleEditRoom(javafx.event.ActionEvent e) {
+        try {
+            FXMLLoader pickLoader = new FXMLLoader(
+                    Objects.requireNonNull(getClass().getResource("/com/appfx/iotmanagementapp/editRoom.fxml"))
+            );
+            Parent pickRoot = pickLoader.load();
+            EditRoomController pickCtrl = pickLoader.getController();
+            pickCtrl.setRooms(rooms);
 
+            pickCtrl.setOnChoose(selectedRoom -> {
+                try {
+                    FXMLLoader editLoader = new FXMLLoader(
+                            Objects.requireNonNull(getClass().getResource("/com/appfx/iotmanagementapp/addRoom.fxml"))
+                    );
+                    Parent editRoot = editLoader.load();
+                    AddRoomController addCtrl = editLoader.getController();
+
+                    addCtrl.setInitialData(selectedRoom.getName(), selectedRoom.getSensors());
+                    addCtrl.setSaveButtonText("Save");
+                    addCtrl.setOnSave(updated -> {
+                        try {
+                            RoomModel updatedWithId = new RoomModel(
+                                    selectedRoom.getId(),
+                                    updated.getName(),
+                                    updated.getSensors()
+                            );
+                            repo.updateRoom(updatedWithId);
+                            int idx = rooms.indexOf(selectedRoom);
+                            rooms.set(idx, updatedWithId);
+                            renderRooms();
+                            log("Updated room '" + updated.getName() + "'");
+                        } catch (Exception ex) {
+                            log("! Update failed: " + ex.getMessage());
+                        }
+                    });
+
+                    // Owner über ein vorhandenes Node holen (z. B. gridRooms)
+                    Window owner = gridRooms.getScene().getWindow();
+
+                    Stage editStage = new Stage();
+                    editStage.setTitle("Raum bearbeiten");
+                    editStage.initOwner(owner);
+                    editStage.setScene(new Scene(editRoot));
+                    editStage.showAndWait();
+
+                } catch (Exception ex) {
+                    log("! Edit-Dialog konnte nicht geladen werden: " + ex.getMessage());
+                }
+            });
+
+            Window owner = gridRooms.getScene().getWindow();
+
+            Stage pickStage = new Stage();
+            pickStage.setTitle("Raum auswählen");
+            pickStage.initOwner(owner);
+            pickStage.setScene(new Scene(pickRoot));
+            pickStage.showAndWait();
+
+        } catch (Exception ex) {
+            log("! Auswahl-Dialog konnte nicht geladen werden: " + ex.getMessage());
+        }
+    }
 
 
 

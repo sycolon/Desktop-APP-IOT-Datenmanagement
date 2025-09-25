@@ -25,12 +25,12 @@ public class RoomRepository {
         ensureTypes();
 
         String sql = """
-            SELECT r.RoomID, r.RoomName, t.TypeName
-            FROM Room r
-            LEFT JOIN Sensor s ON s.RoomID = r.RoomID
-            LEFT JOIN Type t    ON t.TypeID = s.TypeID
-            ORDER BY r.RoomID
-        """;
+        SELECT r.RoomID, r.RoomName, t.TypeName
+        FROM Room r
+        LEFT JOIN Sensor s ON s.RoomID = r.RoomID
+        LEFT JOIN Type   t ON t.TypeID = s.TypeID
+        ORDER BY r.RoomID
+    """;
 
         Map<Integer, String> rooms = new LinkedHashMap<>();
         Map<Integer, EnumSet<SensorType>> sensors = new HashMap<>();
@@ -40,14 +40,15 @@ public class RoomRepository {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                int roomId = rs.getInt("RoomID");
-                String roomName = rs.getString("RoomName");
-                rooms.putIfAbsent(roomId, roomName);
+                int roomId   = rs.getInt("RoomID");
+                String name  = rs.getString("RoomName");
+                rooms.putIfAbsent(roomId, name);
 
                 String typeName = rs.getString("TypeName");
                 if (typeName != null) {
-                    SensorType st = fromLabel(typeName);
-                    sensors.computeIfAbsent(roomId, k -> EnumSet.noneOf(SensorType.class)).add(st);
+                    SensorType st = fromLabel(typeName); // mappt "Temperature" -> SensorType.TEMPERATURE etc.
+                    sensors.computeIfAbsent(roomId, k -> EnumSet.noneOf(SensorType.class))
+                            .add(st);
                 }
             }
         } catch (SQLException e) {
@@ -57,10 +58,18 @@ public class RoomRepository {
         List<RoomModel> result = new ArrayList<>();
         for (var entry : rooms.entrySet()) {
             int id = entry.getKey();
-            result.add(new RoomModel(entry.getValue(), sensors.getOrDefault(id, EnumSet.noneOf(SensorType.class))));
+            EnumSet<SensorType> set = sensors.getOrDefault(id, EnumSet.noneOf(SensorType.class));
+
+            // Falls dein RoomModel (Object id, String name, Set<SensorType>) erwartet:
+            result.add(new RoomModel(id, entry.getValue(), set));
+
+            // Falls es (Long id, String name, Set<...>) erwartet, nimm:
+            // result.add(new RoomModel((long) id, entry.getValue(), set));
         }
         return result;
     }
+
+
 
     /** Speichert einen Raum + zugehörige Sensor-Typen. */
     public void saveRoom(RoomModel room) {
@@ -139,5 +148,8 @@ public class RoomRepository {
         }
         // Fallback: versuchen Enum-Name
         return SensorType.valueOf(label.toUpperCase());
+    }
+
+    public void updateRoom(RoomModel updatedWithId) {
     }
 }

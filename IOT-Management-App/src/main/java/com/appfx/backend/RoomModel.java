@@ -7,7 +7,7 @@ public class RoomModel {
     private final String name;
     private final EnumSet<SensorType> sensors;
 
-    public RoomModel(String name, Set<SensorType> sensors){
+    public RoomModel(Object id, String name, Set<SensorType> sensors){
         if (name == null || name.isBlank()) throw new IllegalArgumentException("Room name required");
         this.name = name.trim();
         this.sensors = sensors.isEmpty() ? EnumSet.noneOf(SensorType.class) : EnumSet.copyOf(sensors);
@@ -22,4 +22,7 @@ public class RoomModel {
                 sensors.stream().map(SensorType::label).sorted().reduce((a,b) -> a + ", " + b).orElse("");
         return name + " (" + sensorList + ")";
     }
+
+    public Object getId() {
+    return null;}
 }

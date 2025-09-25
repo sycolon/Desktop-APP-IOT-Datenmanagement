@@ -41,7 +41,7 @@
                     <HBox alignment="CENTER_RIGHT" spacing="10">
                         <Button fx:id="btnAddRoom" onAction="#handleAddRoom" text="Add Room" />
                         <Button fx:id="btnDeleteRoom" onAction="#handleDeleteRoom" text="Delete Room" />
-<!--                        <Button fx:id="btnEditRoom" onAction="#handleEditRoom" text="Edit Room" />-->
+                        <Button fx:id="btnEditRoom" onAction="#handleEditRoom" text="Edit Room" />
                     </HBox>
                 </VBox>
             </bottom>
