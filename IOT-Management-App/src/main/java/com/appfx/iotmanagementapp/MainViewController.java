@@ -204,8 +204,8 @@ public class MainViewController {
             String sensorIdStr = obj.has("id")   ? obj.get("id").getAsString()   : null;
             String typeStr     = obj.has("type") ? obj.get("type").getAsString() : null;
             Double value       = obj.has("value")? obj.get("value").getAsDouble(): null;
-            Long ts            = obj.has("ts")   ? obj.get("ts").getAsLong()     : System.currentTimeMillis();
-            String roomName    = obj.has("room") ? obj.get("room").getAsString() : null;
+            Long ts            = obj.has("timestamp")   ? obj.get("timestamp").getAsLong()     : System.currentTimeMillis();
+            String roomName    = obj.has("unit") ? obj.get("unit").getAsString() : null;
 
             // Fallbacks aus Topic: house/<room>/<type>/<id>
             if (roomName == null || typeStr == null || sensorIdStr == null) {
