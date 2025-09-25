@@ -25,9 +25,20 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainViewController {
 
@@ -39,7 +50,7 @@ public class MainViewController {
     @FXML private TextField tfPort;
     @FXML private TextField tfTopic;
     @FXML private GridPane gridRooms;
-    @FXML private TextArea taLog;   // unten: „MQTT Log“
+    @FXML private TextArea taLog;
 
     // --- State/Repos ---
     private final MQTTClient mqtt = new MQTTClient();
@@ -47,11 +58,25 @@ public class MainViewController {
     private final RoomRepository repo = new RoomRepository();
     private final MeasurementRepository mRepo = new MeasurementRepository();
 
-    // --- Init ---
+    // --- Parser für die Zeilen der Textdatei ---
+    // Beispielzeile:
+    // Gesendet: Topic='home/sensor/wohnzimmer/temperature', Payload='{"timestamp": "...", "value": 24.4, "unit": "°C"}'
+    // Gruppe 1 Topic zwischen Topic='....'
+    //Gruppe 2  JSON-Payload zwischen PAyload='...'
+    // Ein Regex (kurz für regulärer Ausdruck) ist eine Zeichenfolge, die als Muster dient, um Text zu durchsuchen
+    // zu validieren, zu filtern oder zu manipulieren.
+    // Es handelt sich um eine spezielle Syntax, die mithilfe von Zeichen und Regeln Muster
+    // in Texten beschreibt, anstatt feste Wörter zu suchen.
+    private static final Pattern LINE =
+            Pattern.compile("^Gesendet:\\s*Topic='([^']+)',\\s*Payload='(\\{.*\\})'\\s*$");
+    private static final DateTimeFormatter TS_FMT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    // --- Init ---DB wird Initialisiert (legt Tabellen an, füllt Typen
     @FXML
     private void initialize() {
         try {
-            Database.init();                 // legt ~/.iotapp/homedb.db an bzw. kopiert/initialisiert
+            Database.init();                 // legt ~/.iotapp/homedb.db an bzw. initialisiert
             rooms.setAll(repo.findAll());    // Räume + zugeordnete Typen laden
             log("DB ready: ~/.iotapp/homedb.db");
         } catch (Exception e) {
@@ -82,6 +107,36 @@ public class MainViewController {
 
         final String host = tfHost.getText() == null ? "" : tfHost.getText().trim();
         final String portStr = tfPort.getText() == null ? "" : tfPort.getText().trim();
+
+        // --- DATEI-MODUS: Host beginnt mit file: oder classpath: → statt MQTT wird Datei importiert
+        if (host.startsWith("file:") || host.startsWith("classpath:")) {
+            btnConnect.setDisable(true);
+            log("… Importing from " + host);
+
+            CompletableFuture.runAsync(() -> {
+                if (host.startsWith("file:")) {
+                    Path p = Path.of(host.substring("file:".length()));
+                    importFromFile(p);
+                } else { // classpath:
+                    String res = host.substring("classpath:".length());
+                    if (!res.startsWith("/")) res = "/" + res;
+                    importFromResource(res);
+                }
+            }).whenComplete((v, ex) -> Platform.runLater(() -> {
+                btnConnect.setDisable(false);
+                if (ex != null) {
+                    Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                    log("✖ Import failed: " + cause.getMessage());
+                    btnConnect.setText("Connect");
+                } else {
+                    log("✔ Import finished");
+                    btnConnect.setText("Load again");
+                }
+            }));
+            return; // normalen MQTT-Connect überspringen
+        }
+
+        // --- normaler MQTT-Connect (unverändert) ---
         if (host.isEmpty() || portStr.isEmpty()) { log("! Bitte Host und Port eingeben"); return; }
 
         final int port;
@@ -98,9 +153,9 @@ public class MainViewController {
         CompletableFuture.runAsync(() -> {
             try {
                 mqtt.connect(host, port, null, null);
-
-                // Eingehende Nachrichten → Telemetry-Handler
                 mqtt.setOnMessage((topic, payload) -> handleTelemetry(topic, payload));
+                mqtt.subscribe("house/#", 0);         // nach Bedarf anpassen
+                // mqtt.subscribe("demo/nedim/#", 0);
 
                 // Abonniere deine Topics (nach Bedarf anpassen)
                 if(isValidMqttTopic(tfTopic.getText())) {
@@ -272,10 +327,10 @@ public class MainViewController {
     }
 
     // --- Telemetry & Logging ---
-    /** Verarbeitet eingehende MQTT-Payloads und speichert Messwerte (Variante B Schema). */
+    /** Verarbeitet eingehende MQTT-/Import-Payloads und speichert Messwerte. */
     private void handleTelemetry(String topic, String payload) {
         try {
-            // Erwartetes JSON (Beispiel):
+            // Erwartetes JSON:
             // {"id":"t-wohn-1","type":"temperature","value":22.4,"ts":1710000000000,"room":"wohnzimmer"}
             JsonObject obj = JsonParser.parseString(payload).getAsJsonObject();
 
@@ -303,7 +358,7 @@ public class MainViewController {
 
             SensorType type = mapType(typeStr);
             String roomNorm = roomName.trim().toLowerCase().replace(' ', '-');
-            String sensorName = sensorIdStr; // darf null sein (UNIQUE(RoomID,TypeID,NULL) ok)
+            String sensorName = sensorIdStr; // darf null sein
 
             int sensorId = mRepo.saveFromTelemetry(roomNorm, type, sensorName, value, ts);
             log(String.format("💾 %s/%s [%s]=%.2f @%d (SensorID=%d)",
@@ -340,6 +395,89 @@ public class MainViewController {
     public void mqttDisconnect() {
         mqtt.disconnect();
         log("✖ Disconnected");
+    }
+
+    // --- Datei-Import (Resource oder File); ruft pro Zeile parseAndDispatchLine() auf ---
+    private void importFromResource(String resourcePath) {
+        try (InputStream in = getClass().getResourceAsStream(resourcePath)) {
+            if (in == null) { log("! Resource nicht gefunden: " + resourcePath); return; }
+            try (var br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                br.lines().forEach(this::parseAndDispatchLine);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private void importFromFile(Path path) {
+        try (var lines = Files.lines(path, StandardCharsets.UTF_8)) {
+            lines.forEach(this::parseAndDispatchLine);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    // Eine Zeile „Gesendet: …“ parsen und in die bestehende Pipeline geben
+    private void parseAndDispatchLine(String line) {
+        Matcher m = LINE.matcher(line);
+        if (!m.find()) return; // ignoriert "Simulation gestartet." etc.
+
+        String originalTopic = m.group(1); // z. B. home/sensor/wohnzimmer/temperature
+        String originalJson  = m.group(2); // {"timestamp":"...","value":..., "unit":"..."}
+
+        try {
+            String[] p = originalTopic.split("/");
+            if (p.length < 4) { log("! Ungültiges Topic: " + originalTopic); return; }
+            String roomRaw = p[2];
+            String typeRaw = p[3];
+
+            JsonObject in = JsonParser.parseString(originalJson).getAsJsonObject();
+
+            long ts;
+            if (in.has("timestamp")) {
+                LocalDateTime ldt = LocalDateTime.parse(in.get("timestamp").getAsString(), TS_FMT);
+                ts = ldt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            } else {
+                ts = System.currentTimeMillis();
+            }
+
+            double value;
+            if (in.get("value").isJsonPrimitive() && in.get("value").getAsJsonPrimitive().isBoolean()) {
+                value = in.get("value").getAsBoolean() ? 1.0 : 0.0;
+            } else {
+                value = in.get("value").getAsDouble();
+            }
+
+            // Typ-Namen aus Datei → interne Typen
+            String mappedType = switch (typeRaw.toLowerCase()) {
+                case "temperature"     -> "temperature";
+                case "humidity"        -> "humidity";
+                case "light"           -> "light";
+                case "movement"        -> "move";
+                case "smoke-detektor"  -> "smoke";
+                case "door-sensor"     -> "door";
+                default -> null; // window-sensor/sound-level aktuell ignoriert
+            };
+            if (mappedType == null) { log("↷ übersprungen (nicht unterstützt): " + originalTopic); return; }
+
+            String room = roomRaw.trim().toLowerCase().replace(' ', '-');
+            String id   = "sim-" + mappedType + "-" + room;
+
+            // In das Schema bringen, das handleTelemetry erwartet
+            String newTopic = "house/" + room + "/" + mappedType + "/" + id;
+
+            JsonObject out = new JsonObject();
+            out.addProperty("id",   id);
+            out.addProperty("type", mappedType);
+            out.addProperty("value", value);
+            out.addProperty("ts", ts);
+            out.addProperty("room", room);
+
+            handleTelemetry(newTopic, out.toString());
+
+        } catch (Exception ex) {
+            log("! Import-Fehler: " + ex.getMessage() + " | " + originalTopic);
+        }
     }
 
     public static boolean isValidMqttTopic(String topic) {
