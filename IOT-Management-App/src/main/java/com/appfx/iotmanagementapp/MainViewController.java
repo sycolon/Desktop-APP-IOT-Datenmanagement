@@ -102,13 +102,17 @@ public class MainViewController {
 
                 // Abonniere deine Topics (nach Bedarf anpassen)
                 if(isValidMqttTopic(tfTopic.getText())) {
+                    System.out.println(isValidMqttTopic(tfTopic.getText()));
                     mqtt.subscribe(tfTopic.getText(), 0);
                 } else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Topic error");
-                    alert.setHeaderText(null);
-                    alert.setContentText("Topic dont match the specifications");
-                    alert.showAndWait();
+//                    System.out.println("FEHLER AUSGABE ELSE");
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Topic error");
+                        alert.setHeaderText(null);
+                        alert.setContentText("Topic don't match the specifications");
+                        alert.showAndWait();
+                    });
                 }
                         // Haus-Schema: house/<room>/<type>/<id>
 //                mqtt.subscribe("demo/nedim/#", 0);    // optional: dein Demo-Topic

@@ -65,7 +65,7 @@
                      </padding>
                      <children>
                         <Label text="Topic:" />
-                        <TextField fx:id="tfTopic" prefHeight="26.0" prefWidth="414.0" promptText="Topic='home/sensor/wohnzimmer/temperature'" />
+                        <TextField fx:id="tfTopic" prefHeight="26.0" prefWidth="414.0" promptText="home/sensor/#" />
                      </children>
                   </HBox>
                </children>
