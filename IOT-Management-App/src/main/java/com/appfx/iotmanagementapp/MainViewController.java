@@ -26,6 +26,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -320,6 +321,15 @@ public class MainViewController {
                     : r.getSensors().stream().map(SensorType::label).sorted().reduce((a, b) -> a + ", " + b).orElse("");
 
             Label sensors = new Label(sensorsText);
+            cell.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2) { // Doppelklick
+                    openShowRoom(r);
+                }
+            });
+
+
+
+
 
             cell.getChildren().addAll(name, sensors);
             gridRooms.add(cell, col, row);
@@ -516,5 +526,22 @@ public class MainViewController {
         }
 
         return true;
+    }
+    private void openShowRoom(RoomModel room) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("showRoom.fxml"));
+            Parent root = loader.load();
+
+            ShowRoomController controller = loader.getController();
+            controller.setRoom(room);
+
+            Stage stage = new Stage();
+            stage.setTitle("Room: " + room.getName());
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (IOException e) {
+            System.err.println("Ein Fehler ist aufgetreten: " + e.getMessage());
+        }
+
     }
 }
